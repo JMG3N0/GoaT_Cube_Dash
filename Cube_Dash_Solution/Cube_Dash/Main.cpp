@@ -2,15 +2,15 @@
 #include <math.h>
 #include <iostream>
 
-struct Pike
-{
-    Vector2 position;
-    float Size;
-
-    Vector2 speed;
-    Vector3 collider;
-    float rotation;
-}pike;
+//struct Pike
+//{
+//    Vector2 position;
+//    float Size;
+//
+//    Vector2 speed;
+//    Vector3 collider;
+//    float rotation;
+//}pike;
 
 struct Player
 {
@@ -19,12 +19,14 @@ struct Player
 
     int Lives;
     bool Jump = false;
+    int timer = 0;
+    bool Negtimer = false;
+    
 
     Vector2 Speed;
 }player;
 
-static float pikeHeight = 0.0f;
-static float gravity = 0.0f;
+
 
 int main(void)
 {
@@ -38,6 +40,8 @@ int main(void)
 
     float Baseline = 500;
 
+    Texture2D pike = LoadTexture("resources/pike.png");
+
 
     // Player-Init
     player.size = Vector2{ 40, 40 };
@@ -45,18 +49,11 @@ int main(void)
     player.Lives = 1;
     player.Speed = Vector2{ 5, 0 };
 
+    Rectangle ColRec = {(screenWidth-pike.width), (Baseline+pike.height), pike.height, pike.width};
 
-
-    //Pike-Init
-    pike.position = Vector2{ screenWidth - pike.Size, Baseline + pike.Size };
-    pike.Size = 30.f;
-    pike.speed = Vector2{ player.Speed.x , 0 };
-    pike.collider = Vector3{ pike.position.x, pike.position.y - pikeHeight / 2.0f, 12 };
-    pike.rotation = 0;
-    pikeHeight = (pike.Size / 2) / tanf(20 * DEG2RAD);
-
-    Rectangle CollisionRec = { 0 };
-
+    Rectangle sourceRec = { 0.0f, 0.0f, pike.width , pike.height };
+    Rectangle destRec = { screenWidth, Baseline , pike.width * 400.0f, pike.height * 400.0f };
+    Vector2 origin = { (float)pike.width, (float)pike.height };
 
     // Main game loop
     while (!WindowShouldClose())    
@@ -64,38 +61,56 @@ int main(void)
         // Update
 
         //Pike movement right to left
-        pike.position.x -= pike.speed.x;
-        if (pike.position.x < 0)
+        ColRec.x -= 5;
+        if (ColRec.x < 0)
         {
-            pike.position.x = screenWidth;
+            ColRec.x = screenWidth;
         }
 
         if (IsKeyPressed(KEY_UP) && player.Jump == false)
         {
-            player.position.y = player.position.y - 125;
+            player.timer = 10;
             player.Jump = true;
         }
-            if (player.position.y < (Baseline - player.size.y/2) )
+
+        if (player.Jump == true)
+        {
+            if (player.Negtimer == false)
             {
-                player.position.y += 3.5;
-            }
-            if (player.position.y >= (Baseline - player.size.y / 2))
-            {
-                player.Jump = false;
+                if (player.timer >= 0)
+                {
+                    player.position.y -= 12;
+                    player.timer--;
+                }
+                if (player.timer == 0)
+                {
+                    player.Negtimer = true;
+                    player.timer = 10;
+                }
             }
 
-            CollisionRec = { pike.position.x, pike.position.y,30.0f , 100.0f};
+            if (player.Negtimer == true)
+            {
+                if (player.timer >= 0)
+                {
+                    player.position.y += 12;
+                    player.timer--;
+                }
+                if (player.timer == 0)
+                {
+                    player.Negtimer = false;
+                    player.timer = 0;
+                    player.Jump = false;
+                }
+            }
+
+        }
 
 
         BeginDrawing(); // Draw
-        // Draw Pike
-        Vector2 v1 = { pike.position.x + sinf(pike.rotation * DEG2RAD) * (pikeHeight), pike.position.y - cosf(pike.rotation * DEG2RAD) * (pikeHeight) };
-        Vector2 v2 = { pike.position.x - cosf(pike.rotation * DEG2RAD) * (pike.Size / 2), pike.position.y - sinf(pike.rotation * DEG2RAD) * (pike.Size / 2) };
-        Vector2 v3 = { pike.position.x + cosf(pike.rotation * DEG2RAD) * (pike.Size / 2), pike.position.y + sinf(pike.rotation * DEG2RAD) * (pike.Size / 2) };
 
         DrawRectangle(screenWidth/2 - (player.size.x/2), player.position.y - player.size.y/2, player.size.x, player.size.y, MAROON);
-        DrawTriangle(v1, v2, v3, MAROON); // PIKE
-        DrawRectangle(pike.position.x, pike.position.y,40 ,40, RED);
+        DrawTexturePro(pike,sourceRec, destRec, origin, 0.0f, WHITE);
 
         ClearBackground(LIGHTGRAY);
 
